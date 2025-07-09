@@ -18,6 +18,7 @@ struct CatalogState {
 //MARK: - Intent
 enum CatalogIntent {
   case onAppear
+  case fetchNextPage
   case reloadCatalog
   case reloadBanner(id: String)
 }

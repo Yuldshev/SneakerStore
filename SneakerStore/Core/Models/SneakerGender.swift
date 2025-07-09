@@ -1,6 +1,6 @@
 import Foundation
 
-enum SneakerGender: String, CaseIterable {
+enum SneakerGender: String, CaseIterable, Codable {
   case child, infant, kids, men, preschool, toddler, unisex, women, youth
   
   var title: String {

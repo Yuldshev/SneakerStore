@@ -1,6 +1,6 @@
 import Foundation
 
-enum SneakerBrand: String, CaseIterable {
+enum SneakerBrand: String, CaseIterable, Codable {
   case nike = "NIKE"
   case adidas = "ADIDAS"
   case newbalance = "NEW BALANCE"
@@ -31,5 +31,9 @@ enum SneakerBrand: String, CaseIterable {
     return SneakerBrand.allCases.first { brand in
       brand.rawValue.lowercased().replacingOccurrences(of: " ", with: "") == cleanedValue
     }
+  }
+  
+  static var displayCases: [SneakerBrand] {
+    allCases.filter { $0 != .unknown }
   }
 }

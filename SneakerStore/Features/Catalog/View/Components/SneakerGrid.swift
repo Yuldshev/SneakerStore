@@ -1,21 +1,27 @@
 import SwiftUI
 
 struct SneakerGrid: View {
-  let sneakers: [Sneaker]
+  var sneakers: [Sneaker]
+  var isFavorite: (Sneaker) -> Bool
+  var toggleFavorite: (Sneaker) -> Void
+  var onLastItemAppear: (() -> Void)?
   
   private let columns = Array(repeating: GridItem(.flexible(), spacing: 15), count: 2)
   
   var body: some View {
-    VStack(alignment: .leading, spacing: 16) {
-      Text("Recommended Sneakers")
-        .font(.system(size: 24, weight: .bold))
-      
-      LazyVGrid(columns: columns, spacing: 16) {
-        ForEach(sneakers, id: \.id) { sneaker in
-          SneakerCart(sneaker: sneaker)
-        }
+    LazyVGrid(columns: columns, spacing: 16) {
+      ForEach(sneakers, id: \.id) { sneaker in
+        SneakerCart(sneaker: sneaker, isFav: isFavorite(sneaker), onTapFavorite: { toggleFavorite(sneaker) })
+          .onAppear {
+            if sneaker.id == sneakers.last?.id {
+              onLastItemAppear?()
+            }
+          }
       }
     }
   }
 }
+
+
+
 

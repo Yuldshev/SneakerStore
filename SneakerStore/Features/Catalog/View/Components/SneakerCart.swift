@@ -1,18 +1,15 @@
 import SwiftUI
-import Kingfisher
 
 struct SneakerCart: View {
-  let sneaker: Sneaker
+  var sneaker: Sneaker
+  var isFav: Bool = false
+  var onTapFavorite: () -> Void = {}
   
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
-      KFImage(sneaker.thumbnail)
-        .resizable()
-        .placeholder({
-          Rectangle().fill(.white)
-        })
-        .scaledToFit()
+      LoaderImage(url: sneaker.thumbnail, resizingMode: .fill)
         .padding()
+        .frame(height: 180)
         .background(.white)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
       
@@ -26,15 +23,31 @@ struct SneakerCart: View {
       }
       .padding(.leading, 8)
     }
+    .overlay(alignment: .topTrailing) {
+      Button {
+        withAnimation(.easeInOut) { onTapFavorite() }
+      } label: {
+        Image(systemName: isFav ? "heart.fill" : "heart")
+          .foregroundStyle(.black)
+          .padding(10)
+          .background(Color(.systemGray6))
+          .clipShape(Circle())
+      }
+      .padding(12)
+    }
   }
 }
 
 #Preview {
   let columns = Array(repeating: GridItem(.flexible(), spacing: 15), count: 2)
   
-  LazyVGrid(columns: columns, spacing: 16) {
-    SneakerCart(sneaker: mockSneaker.first!!)
-    SneakerCart(sneaker: mockSneaker.first!!)
+  ZStack {
+    Color(.systemGray6).ignoresSafeArea()
+    
+    LazyVGrid(columns: columns, spacing: 16) {
+      SneakerCart(sneaker: Sneaker.mock.first!, isFav: true)
+      SneakerCart(sneaker: Sneaker.mock.first!, isFav: false)
+    }
+    .padding(.horizontal, 24)
   }
-  .padding(.horizontal, 24)
 }
