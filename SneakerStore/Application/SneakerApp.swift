@@ -4,7 +4,7 @@ import SwiftUI
 struct SneakerApp: App {
     var body: some Scene {
         WindowGroup {
-            CatalogView()
+            TabbarView()
         }
     }
 }
