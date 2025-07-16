@@ -2,13 +2,13 @@ import SwiftUI
 import SwiftfulRouting
 
 struct TabbarView: View {
-  @State private var vm = TabbarVM()
+  @State private var vm = VMFactory.makeTab()
   
   var body: some View {
     TabView {
       Tab("Home", systemImage: "house.fill") {
-        RouterView(addNavigationStack: true, addModuleSupport: false) { _ in
-          CatalogView()
+        RouterView(addNavigationStack: true, addModuleSupport: false) { router in
+          CatalogView(router: router)
         }
       }
       
@@ -19,29 +19,22 @@ struct TabbarView: View {
       }
       
       Tab("Favorites", systemImage: "heart.fill") {
-        RouterView(addNavigationStack: true, addModuleSupport: false) { _ in
-          FavoritesView()
+        RouterView(addNavigationStack: true, addModuleSupport: false) { router in
+          FavoritesView(router: router)
         }
       }
       
       Tab("Cart", systemImage: "cart.fill") {
-        RouterView(addNavigationStack: true, addModuleSupport: false) { _ in
-          CartView()
+        RouterView(addNavigationStack: true, addModuleSupport: false) { router in
+          CartView(router: router)
         }
       }
       .badge(vm.cartCount)
-      
-      Tab("Profile", systemImage: "person.fill") {
-        RouterView(addNavigationStack: true, addModuleSupport: false) { _ in
-          ProfileView()
-        }
-      }
     }
   }
 }
 
-
-
+//MARK: - Preview
 #Preview {
   TabbarView()
 }

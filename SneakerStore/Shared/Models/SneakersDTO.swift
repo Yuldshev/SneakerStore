@@ -2,11 +2,11 @@ import Foundation
 
 struct SneakersResponse: Codable {
   let count: Int?
-  let results: [SneakerDTO]
+  let results: [SneakersDTO]
 }
 
 // MARK: - Result
-struct SneakerDTO: Codable, Identifiable {
+struct SneakersDTO: Codable, Identifiable {
   let id: String
   let brand, colorway: String
   let estimatedMarketValue: Int?

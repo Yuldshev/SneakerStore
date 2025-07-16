@@ -2,10 +2,10 @@ import Foundation
 
 @Observable
 final class TabbarVM {
-  private var cartService: CartServiceProtocol
+  private let cartService: CartServiceProtocol
   
-  init(service: CartServiceProtocol = CartService()) {
-    self.cartService = service
+  init(cartService: CartServiceProtocol) {
+    self.cartService = cartService
   }
   
   var cartCount: Int {

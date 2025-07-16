@@ -2,7 +2,13 @@ import SwiftUI
 import SwiftfulRouting
 
 struct CatalogView: View {
-  @State private var vm = CatalogVM()
+  @State private var vm: CatalogVM
+  private let router: AnyRouter
+  
+  init(router: AnyRouter) {
+    self.router = router
+    self._vm = State(initialValue: VMFactory.makeCatalog(router: router))
+  }
   
   var body: some View {
     ZStack {
@@ -12,8 +18,8 @@ struct CatalogView: View {
         switch vm.state.catalogState {
           case .idle, .loading:
             skeletonScreen
-          case .loaded(let sneakers):
-            loadedScreen(sneakers)
+          case .loaded:
+            loadedScreen(vm.sneakerCards)
           case .error(let error):
             errorScreen(error)
           case .empty:
@@ -23,9 +29,13 @@ struct CatalogView: View {
       }
       .contentMargins(.horizontal, 24, for: .scrollContent)
       .scrollIndicators(.hidden)
-      .task { await vm.send(intent: .onAppear) }
+      .task {
+        if vm.sneakerCards.isEmpty {
+          await vm.send(intent: .onAppear)
+        }
+      }
     }
-    .navigationTitle("Welcome User")
+    .navigationTitle("Sneaker Store")
   }
 }
 
@@ -46,29 +56,21 @@ extension CatalogView {
     
   }
   
-  private func loadedScreen(_ sneakers: [Sneaker]) -> some View {
+  private func loadedScreen(_ models: [SneakerCardModel]) -> some View {
     VStack(spacing: 24) {
-      SneakerBanners(state: vm.state.bannerStates)
+      SneakerBanners(
+        bannerStates: vm.state.bannerStates,
+        onTap: { vm.handleBannerTap($0)}
+      )
       
       VStack(alignment: .leading, spacing: 16) {
         Text("Recommended Sneakers")
           .font(.system(size: 24, weight: .bold))
         
-        SneakerGrid(
-          sneakers: sneakers,
-          isFavorite: { vm.isFavorite(sneaker: $0) },
-          toggleFavorite: { vm.toggleFavorite(sneaker: $0) },
-          isCart: { vm.isCart(sneaker: $0) },
-          toggleCart: { vm.addToCart(sneaker: $0) }
-        )
+        SneakerGrid(models: models)
         .padding(.bottom)
       }
     }
   }
 }
 
-//MARK: - Preview
-#Preview {
-  CatalogView()
-    .previewRouter()
-}

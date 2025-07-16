@@ -2,7 +2,10 @@ import SwiftUI
 
 struct SneakerBanners: View {
   let bannerStates: [LoadingState<Sneaker>]
+  let onTap: (Sneaker) async -> Void
+  
   @State private var currentIndex = 0
+  @Environment(\.router) var router
   
   private var timeInterval: TimeInterval = 6.0
   
@@ -15,8 +18,9 @@ struct SneakerBanners: View {
     }
   }
   
-  init(state: [LoadingState<Sneaker>]) {
-    self.bannerStates = state
+  init(bannerStates: [LoadingState<Sneaker>], onTap: @escaping (Sneaker) async -> Void) {
+    self.bannerStates = bannerStates
+    self.onTap = onTap
   }
   
   var body: some View {
@@ -28,6 +32,7 @@ struct SneakerBanners: View {
           ForEach(loadedBanners.indices, id: \.self) { index in
             BannerView(sneaker: loadedBanners[index])
               .tag(index)
+              .onTapGesture { Task { await onTap(loadedBanners[index])} }
           }
         }
         .tabViewStyle(.page(indexDisplayMode: .never))

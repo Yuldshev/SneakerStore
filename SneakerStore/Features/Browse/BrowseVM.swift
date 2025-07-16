@@ -3,119 +3,79 @@ import Foundation
 @Observable
 @MainActor
 final class BrowseVM {
-  private(set) var state: LoadingState<[Sneaker]> = .idle
+  private(set) var state: BrowseState
+  private(set) var isRefreshing: Bool = false
   
   // MARK: - Filters
-  var query: String = "" { didSet { handleSearchChange() } }
   var selectedBrand: SneakerBrand?
-  var selectedGender: SneakerGender?
+  var selectedGender: SneakerGender = .men
   var selectedSort: String?
   
-  private var sneakerService: SneakersServiceProtocol
-  private var favoriteService: FavoriteServiceProtocol
-  private var cartService: CartServiceProtocol
-  private var searchTask: Task<Void, Never>?
+  private let sneakerService: SneakersServiceProtocol
+  private let favoriteService: FavoriteServiceProtocol
+  private let cartService: CartServiceProtocol
+  private let router: RouterProtocol
   
   init(
-    brand: SneakerBrand? = nil,
-    service: SneakersServiceProtocol = SneakersService(),
-    favorite: FavoriteServiceProtocol = FavoriteService(),
-    cart: CartServiceProtocol = CartService()
+    brand: SneakerBrand,
+    sneakerService: SneakersServiceProtocol,
+    favoriteService: FavoriteServiceProtocol,
+    cartService: CartServiceProtocol,
+    router: RouterProtocol
   ) {
     self.selectedBrand = brand
-    self.sneakerService = service
-    self.favoriteService = favorite
-    self.cartService = cart
+    self.sneakerService = sneakerService
+    self.favoriteService = favoriteService
+    self.cartService = cartService
+    self.router = router
+    self.state = BrowseState()
   }
   
   // MARK: - Public Intent Handlers
-  func initialLoad() {
-    guard selectedBrand != nil else { return }
-    performSearch()
-  }
-  
-  func selectGender(_ gender: SneakerGender?) {
-    selectedGender = gender
-    performSearch()
-  }
-  
-  func selectSort(_ sort: String) {
-    if selectedSort == sort {
-      selectedSort = nil
-    } else {
-      selectedSort = sort
+  func send(intent: BrowseIntent) async {
+    switch intent {
+      case .onAppear:
+        await fetchSneakers(true)
+      case .reload:
+        await fetchSneakers()
     }
-    performSearch()
+  }
+  
+  func makeCardModel(_ sneaker: Sneaker) -> SneakerCardModel {
+    SneakerCardModel(
+      id: sneaker.id,
+      sneaker: sneaker,
+      isFavorite: favoriteService.isFavorite(sneaker),
+      isCart: cartService.isCart(sneaker: sneaker),
+      onFavoriteTap: { self.favoriteService.toggleFavorite(sneaker)},
+      onCartTap: { self.cartService.addCart(sneaker: sneaker)},
+      onCardTap: {
+        let model = self.makeCardModel(sneaker)
+        Task { await self.router.showSneakerDetail(model: model) }
+      }
+    )
+  }
+  
+  var sneakerCards: [SneakerCardModel] {
+    if case .loaded(let sneakers) = state.loadingState {
+      return sneakers.map { makeCardModel($0) }
+    }
+    
+    return []
   }
   
   // MARK: - Private Logic
-  private func handleSearchChange() {
-    searchTask?.cancel()
+  private func fetchSneakers(_ isInitLoad: Bool = false) async {
+    if isInitLoad { state.loadingState = .loading }
+    isRefreshing = true
     
-    searchTask = Task {
-      do {
-        try await Task.sleep(for: .milliseconds(500))
-        
-        if selectedBrand != nil {
-          selectedBrand = nil
-        }
-        
-        await performSearch()
-      } catch {
-        
-      }
+    do {
+      let sneakers = try await sneakerService.searchSneakers(brand: selectedBrand, gender: selectedGender, sort: selectedSort, count: 10)
+      state.loadingState = sneakers.isEmpty ? .empty : .loaded(sneakers)
+    } catch {
+      state.loadingState = .error(error)
     }
-  }
-  
-  func performSearch() {
-    Task {
-      await performSearch()
-    }
-  }
-  
-  private func performSearch() async {
-    Task {
-      guard !query.isEmpty || selectedBrand != nil else {
-        state = .idle
-        return
-      }
-      
-      state = .loading
-      
-      do {
-        let sneakers = try await sneakerService.searchSneakers(
-          name: query.isEmpty ? nil : query,
-          brand: selectedBrand,
-          gender: selectedGender,
-          sort: selectedSort,
-          count: 10
-        )
-        
-        state = sneakers.isEmpty ? .empty : .loaded(sneakers)
-      } catch is CancellationError {
-        
-      } catch {
-        state = .error(error)
-      }
-    }
-  }
-  
-  //MARK: - Favorite
-  func isFavorite(sneaker: Sneaker) -> Bool {
-    favoriteService.isFavorite(sneaker: sneaker)
-  }
-  
-  func toggleFavorite(sneaker: Sneaker) {
-    favoriteService.toggleFavorite(sneaker: sneaker)
-  }
-  
-  //MARK: - Cart
-  func isCart(sneaker: Sneaker) -> Bool {
-    cartService.isCart(sneaker: sneaker)
-  }
-  
-  func addCart(sneaker: Sneaker) {
-    cartService.addCart(sneaker: sneaker)
+    isRefreshing = false
   }
 }
 

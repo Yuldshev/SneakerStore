@@ -19,7 +19,8 @@ enum Mapper {
       let brand = SneakerBrand.from(firstDTO.brand),
       let gender = SneakerGender.from(firstDTO.gender),
       let silhouette = firstDTO.silhouette, !silhouette.isEmpty,
-      let story = firstDTO.story, !story.isEmpty
+      let story = firstDTO.story, !story.isEmpty,
+      firstDTO.retailPrice > 0
     else { return nil }
     
     let variants = dtos.compactMap(mapToVariant)

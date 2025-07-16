@@ -19,7 +19,9 @@ struct BannerView: View {
       
       Spacer()
       
-      LoaderImage(url: sneaker.thumbnail)
+      LoaderImage(url: sneaker.thumbnail) {
+        Rectangle().fill(Color(.systemGray4)).skeleton(true)
+      }
         .scaleEffect(1.3)
         .rotationEffect(Angle(degrees: 24))
       

@@ -1,49 +1,28 @@
 import Foundation
 
 protocol FavoriteServiceProtocol {
-  func isFavorite(sneaker: Sneaker) -> Bool
-  func toggleFavorite(sneaker: Sneaker)
-  func getFavorites() -> [Sneaker]
   var favoriteSneakers: [Sneaker] { get }
+  func isFavorite(_ sneaker: Sneaker) -> Bool
+  func toggleFavorite(_ sneaker: Sneaker)
 }
 
 @Observable
 final class FavoriteService: FavoriteServiceProtocol {
-  private var cacheService: CacheServiceProtocol
-  private let cacheKey = "favorite_sneakers"
+  private let collectionService: UserCollectionServiceProtocol
   
-  private(set) var favoriteSneakers: [Sneaker] = []
-  
-  init(cacheService: CacheServiceProtocol = CacheService()) {
-    self.cacheService = cacheService
-    Task { await loadFavoritesFromCache() }
+  init(collectionService: UserCollectionServiceProtocol) {
+    self.collectionService = collectionService
   }
   
-  //MARK: - Public methods
-  func isFavorite(sneaker: Sneaker) -> Bool {
-    favoriteSneakers.contains { $0.id == sneaker.id }
+  var favoriteSneakers: [Sneaker] {
+    collectionService.sneakers
   }
   
-  func toggleFavorite(sneaker: Sneaker) {
-    if isFavorite(sneaker: sneaker) {
-      favoriteSneakers.removeAll { $0.id == sneaker.id }
-    } else {
-      favoriteSneakers.append(sneaker)
-    }
-    
-    Task { await saveFavoritesToCache() }
+  func isFavorite(_ sneaker: Sneaker) -> Bool {
+    collectionService.contains(sneaker)
   }
   
-  func getFavorites() -> [Sneaker] {
-    return favoriteSneakers
-  }
-  
-  //MARK: - Private Methods
-  private func loadFavoritesFromCache() async {
-    self.favoriteSneakers = await cacheService.loadCache(key: cacheKey, as: [Sneaker].self) ?? []
-  }
-  
-  private func saveFavoritesToCache() async {
-    await cacheService.saveCache(favoriteSneakers, key: cacheKey)
+  func toggleFavorite(_ sneaker: Sneaker) {
+    collectionService.toggle(sneaker)
   }
 }

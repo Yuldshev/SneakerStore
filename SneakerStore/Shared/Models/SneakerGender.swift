@@ -1,7 +1,7 @@
 import Foundation
 
 enum SneakerGender: String, CaseIterable, Codable {
-  case child, infant, kids, men, preschool, toddler, unisex, women, youth
+  case men, unisex, women
   
   var title: String {
     self.rawValue.uppercased()

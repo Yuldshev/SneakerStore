@@ -2,37 +2,40 @@ import Foundation
 
 @Observable
 final class CartVM {
-  private(set) var state: LoadingState<[Sneaker]> = .idle
-  private var cartService: CartServiceProtocol
+  private let cartService: CartServiceProtocol
+  private let favoriteService: FavoriteServiceProtocol
+  private let router: RouterProtocol
   
-  init(service: CartServiceProtocol = CartService()) {
-    self.cartService = service
-    loadCart()
+  init(cartService: CartServiceProtocol, favoriteService: FavoriteServiceProtocol, router: RouterProtocol) {
+    self.cartService = cartService
+    self.favoriteService = favoriteService
+    self.router = router
   }
   
-  var sneakers: [Sneaker] {
-    switch state {
-      case .loaded(let data): return data
-      default: return []
-    }
-  }
-  
-  func loadCart() {
-    state = .loading
+  var sneakers: [SneakerCardModel] {
+    let cartSneakers = cartService.cartSneakers
     
-    Task {
-      let items = cartService.cartSneakers
-      
-      if items.isEmpty {
-        state = .empty
-      } else {
-        state = .loaded(items)
-      }
+    return cartSneakers.map { sneaker in
+      makeCardModel(sneaker)
     }
   }
   
-  func toggleCart(_ sneaker: Sneaker) {
-    cartService.addCart(sneaker: sneaker)
-    loadCart()
+  var state: LoadingState<[SneakerCardModel]> {
+    sneakers.isEmpty ? .empty : .loaded(sneakers)
+  }
+  
+  func makeCardModel(_ sneaker: Sneaker) -> SneakerCardModel {
+    SneakerCardModel(
+      id: sneaker.id,
+      sneaker: sneaker,
+      isFavorite: favoriteService.isFavorite(sneaker),
+      isCart: cartService.isCart(sneaker: sneaker),
+      onFavoriteTap: { self.favoriteService.toggleFavorite(sneaker)},
+      onCartTap: { self.cartService.addCart(sneaker: sneaker) },
+      onCardTap: {
+        let model = self.makeCardModel(sneaker)
+        Task { await self.router.showSneakerDetail(model: model) }
+      }
+    )
   }
 }

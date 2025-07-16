@@ -1,7 +1,14 @@
 import SwiftUI
+import SwiftfulRouting
 
 struct CartView: View {
-  @State private var vm = CartVM()
+  @State private var vm: CartVM
+  private let router: AnyRouter
+  
+  init(router: AnyRouter) {
+    self.router = router
+    self._vm = State(initialValue: VMFactory.makeCart(router: router))
+  }
   
   var body: some View {
     ZStack {
@@ -12,8 +19,8 @@ struct CartView: View {
           case .idle, .loading:
             ProgressView()
               .frame(maxWidth: .infinity, maxHeight: .infinity)
-          case .loaded(let sneakers):
-            loaded(sneakers)
+          case .loaded(let models):
+            loaded(models)
           case .error(let error):
             errorScreen(error)
           case .empty:
@@ -27,11 +34,11 @@ struct CartView: View {
 
 //MARK: - Helper
 extension CartView {
-  private func loaded(_ sneakers: [Sneaker]) -> some View {
+  private func loaded(_ models: [SneakerCardModel]) -> some View {
     ScrollView(.vertical) {
       VStack(spacing: 12) {
-        ForEach(sneakers, id: \.id) { sneaker in
-          SneakerListItem(sneaker: sneaker)
+        ForEach(models, id: \.id) { model in
+          SneakerListItem(sneaker: model.sneaker)
             .scrollTransition { content, phase in
               content
                 .opacity(phase.isIdentity ? 1 : 0.6)
@@ -39,8 +46,17 @@ extension CartView {
                 .blur(radius: phase.isIdentity ? 0 : 2)
             }
             .swipeActions {
-              Action(symbolImage: "trash.fill", tint: .white, background: .red) { _ in vm.toggleCart(sneaker) }
+              Action(symbolImage: "heart.fill", tint: .white, background: .green) { _ in
+                model.onFavoriteTap()
+              }
+              Action(symbolImage: "trash.fill", tint: .white, background: .red) { _ in
+                model.onCartTap()
+              }
             }
+            .onTapGesture {
+              model.onCardTap()
+            }
+            .id("\(model.id)-\(model.isFavorite)")
         }
       }
       .padding(24)
@@ -51,8 +67,3 @@ extension CartView {
   }
 }
 
-//MARK: - Preview
-#Preview {
-  CartView()
-    .previewRouter()
-}

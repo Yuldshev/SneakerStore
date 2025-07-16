@@ -53,8 +53,6 @@ enum SneakersEndpoint {
     gender: String?,
     brand: String?,
     sort: String?,
-    silhouette: String?,
-    name: String?
   )
   case getSneakerId(id: String)
 }
@@ -69,7 +67,7 @@ extension SneakersEndpoint: APIEndpoint {
   
   var parameters: [URLQueryItem]? {
     switch self {
-      case .getSneakers(let limit, let page, let gender, let brand, let sort, let silhouette, let name):
+      case .getSneakers(let limit, let page, let gender, let brand, let sort):
         var queryItems = [
           URLQueryItem(name: "limit", value: "\(limit)"),
           URLQueryItem(name: "page", value: "\(page)")
@@ -78,8 +76,6 @@ extension SneakersEndpoint: APIEndpoint {
         if let gender = gender { queryItems.append(URLQueryItem(name: "gender", value: gender))}
         if let brand = brand { queryItems.append(URLQueryItem(name: "brand", value: brand))}
         if let sort = sort { queryItems.append(URLQueryItem(name: "sort", value: sort))}
-        if let silhouette = silhouette { queryItems.append(URLQueryItem(name: "silhouette", value: silhouette))}
-        if let name = name { queryItems.append(URLQueryItem(name: "name", value: name))}
         
         return queryItems
         

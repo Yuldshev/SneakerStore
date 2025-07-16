@@ -9,7 +9,9 @@ struct BrowseView: View {
       
       List(SneakerBrand.displayCases, id: \.rawValue) { brand in
         Button {
-          router.showScreen(.push) { _ in BrowseDetailView(brand: brand) }
+          router.showScreen(.push) { router in
+            BrowseDetailView(brand: brand, router: router)
+          }
         } label: {
           Text(brand.rawValue.capitalized)
             .font(.system(size: 16))

@@ -8,17 +8,20 @@ final class CatalogVM {
   private let sneakerService: SneakersServiceProtocol
   private let favoriteService: FavoriteServiceProtocol
   private let cartService: CartServiceProtocol
+  private let router: RouterProtocol
   
   private let bannerIDs = ["0f772970-8337-4fd4-9e17-002345eeb10c", "2ee22292-ceea-44dc-8278-2bda6ffd551c", "9a0a0140-68ff-4cef-a41b-66329f5ff3f5"]
   
   init(
-    sneakerService: SneakersServiceProtocol = SneakersService(),
-    favoriteService: FavoriteServiceProtocol = FavoriteService(),
-    cartService: CartServiceProtocol = CartService()
+    sneakerService: SneakersServiceProtocol,
+    favoriteService: FavoriteServiceProtocol,
+    cartService: CartServiceProtocol,
+    router: RouterProtocol
   ) {
     self.sneakerService = sneakerService
     self.favoriteService = favoriteService
     self.cartService = cartService
+    self.router = router
     self.state = CatalogState(bannerCount: bannerIDs.count)
   }
   
@@ -26,7 +29,7 @@ final class CatalogVM {
   func send(intent: CatalogIntent) async {
     switch intent {
       case .onAppear: await fetchAll()
-      case .reloadCatalog: await fetchCatalog()
+      case .reloadCatalog: await fetchCatalog(false)
       case .reloadBanner(let id):
         if let index = bannerIDs.firstIndex(of: id) {
           await fetchBanner(at: index)
@@ -34,15 +37,39 @@ final class CatalogVM {
     }
   }
   
+  func makeCardModel(_ sneaker: Sneaker) -> SneakerCardModel {
+    SneakerCardModel(
+      id: sneaker.id,
+      sneaker: sneaker,
+      isFavorite: favoriteService.isFavorite(sneaker),
+      isCart: cartService.isCart(sneaker: sneaker),
+      onFavoriteTap: { self.favoriteService.toggleFavorite(sneaker)},
+      onCartTap: { self.cartService.addCart(sneaker: sneaker)},
+      onCardTap: {
+        let model = self.makeCardModel(sneaker)
+        Task { await self.router.showSneakerDetail(model: model) }
+      }
+    )
+  }
+  
+  func handleBannerTap(_ sneaker: Sneaker) {
+    let model = makeCardModel(sneaker)
+    Task { await router.showSneakerDetail(model: model) }
+  }
+  
   //MARK: - Private State Sneaker
   private func fetchAll() async {
-    async let catalogResult: () = fetchCatalog()
+    state.catalogState = .loading
+    state.bannerStates = Array(repeating: .loading, count: bannerIDs.count)
+    
+    async let catalogResult: () = fetchCatalog(true)
     async let bannersResult: () = fetchBanners()
     _ = await (catalogResult, bannersResult)
   }
   
-  private func fetchCatalog() async {
-    state.catalogState = .loading
+  private func fetchCatalog(_ isInitLoad: Bool) async {
+    if isInitLoad { state.catalogState = .loading }
+    state.isRefreshing = true
     
     do {
       let sneakers = try await sneakerService.fetchSneakers(count: 10)
@@ -50,6 +77,7 @@ final class CatalogVM {
     } catch {
       state.catalogState = .error(error)
     }
+    state.isRefreshing = false
   }
   
   private func fetchBanners() async {
@@ -78,21 +106,12 @@ final class CatalogVM {
     }
   }
   
-  //MARK: - Favorite Sneaker
-  func isFavorite(sneaker: Sneaker) -> Bool {
-    favoriteService.isFavorite(sneaker: sneaker)
-  }
-  
-  func toggleFavorite(sneaker: Sneaker) {
-    favoriteService.toggleFavorite(sneaker: sneaker)
-  }
-  
-  //MARK: - Cart Sneaker
-  func isCart(sneaker: Sneaker) -> Bool {
-    cartService.isCart(sneaker: sneaker)
-  }
-  
-  func addToCart(sneaker: Sneaker) {
-    cartService.addCart(sneaker: sneaker)
+  //MARK: - SneakerCard
+  var sneakerCards: [SneakerCardModel] {
+    if case .loaded(let sneakers) = state.catalogState {
+      return sneakers.map { makeCardModel($0) }
+    }
+    
+    return []
   }
 }

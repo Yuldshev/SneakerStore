@@ -5,7 +5,9 @@ struct SneakerListItem: View {
   
   var body: some View {
     HStack(spacing: 24) {
-      LoaderImage(url: sneaker.thumbnail, resizingMode: .fill)
+      LoaderImage(url: sneaker.thumbnail, resizingMode: .fill) {
+        Rectangle().fill(Color(.systemGray4)).skeleton(true)
+      }
         .scaleEffect(1.2)
         .frame(width: 80, height: 80)
       

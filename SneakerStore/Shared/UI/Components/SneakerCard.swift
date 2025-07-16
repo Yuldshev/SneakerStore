@@ -1,23 +1,23 @@
 import SwiftUI
 
 struct SneakerCard: View {
-  var sneaker: Sneaker
-  var isFav: Bool = false
-  var onTapFavorite: () -> Void = {}
+  var model: SneakerCardModel
   
   var body: some View {
     VStack(alignment: .leading, spacing: 8) {
-      LoaderImage(url: sneaker.thumbnail, resizingMode: .fill)
+      LoaderImage(url: model.sneaker.thumbnail, resizingMode: .fill) {
+        Rectangle().fill(Color(.systemGray4)).skeleton(true)
+      }
         .padding()
         .frame(height: 180)
         .background(.white)
         .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
       
       VStack(alignment: .leading, spacing: 4) {
-        Text("$\(sneaker.price)")
+        Text("$\(model.sneaker.price)")
           .font(.system(size: 16, weight: .bold))
           .foregroundStyle(.black)
-        Text("\(sneaker.brand.rawValue.capitalized) \(sneaker.silhouette)")
+        Text("\(model.sneaker.brand.rawValue.capitalized) \(model.sneaker.silhouette)")
           .font(.system(size: 12))
           .foregroundStyle(.black)
           .lineLimit(2)
@@ -26,9 +26,21 @@ struct SneakerCard: View {
       .padding(.leading, 8)
     }
     .overlay(alignment: .topTrailing) {
-      ButtonAction(isBool: isFav, icon: .favorite, onTap: { onTapFavorite() })
+      ButtonAction(isBool: model.isFavorite, icon: .favorite, onTap: { model.onFavoriteTap() })
         .padding(12)
     }
   }
 }
 
+//MARK: - SneakerCardModel
+struct SneakerCardModel: Identifiable {
+  var id: String
+  var sneaker: Sneaker
+  
+  var isFavorite: Bool
+  var isCart: Bool
+  
+  var onFavoriteTap: () -> Void
+  var onCartTap: () -> Void
+  var onCardTap: () -> Void
+}

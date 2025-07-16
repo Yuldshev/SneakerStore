@@ -1,13 +1,13 @@
 import SwiftUI
 
-struct SneakerDetail: View {
-  var sneaker: Sneaker
+struct SneakerDetailView: View {
+  @State private var vm: SneakerDetailVM
+  private let sneaker: Sneaker
   
-  // Favorite button
-  var isFavorite: Bool
-  var onFavoriteTapped: () -> Void
-  var isCart: Bool
-  var onCartTapped: () -> Void
+  init(sneaker: Sneaker) {
+    self.sneaker = sneaker
+    self._vm = State(initialValue: VMFactory.makeDetailVM(sneaker: sneaker))
+  }
   
   @State private var selectedIndex = 0
   
@@ -25,35 +25,40 @@ struct SneakerDetail: View {
       }
       .scrollIndicators(.hidden)
     }
+    .navigationTitle("\(sneaker.brand.rawValue.capitalized) \(sneaker.silhouette.capitalized)")
     .animation(.smooth, value: selectedIndex)
-    .overlay(alignment: .bottom) {
-      HStack {
-        ButtonFavorite
-        ButtonCart
-      }.padding(.horizontal, 24)
-    }
   }
 }
 
 //MARK: - Helper
-extension SneakerDetail {
+extension SneakerDetailView {
   private var SneakerImage: some View {
-    LoaderImage(url: sneaker.variants[selectedIndex].image)
+    LoaderImage(url: sneaker.variants[selectedIndex].image) {
+      Rectangle().fill(Color(.systemGray4)).skeleton(true)
+    }
       .background(.white)
-      .frame(maxWidth: .infinity, minHeight: 260)
+      .frame(maxWidth: .infinity, minHeight: 280)
       .clipShape(RoundedRectangle(cornerRadius: 24, style: .continuous))
       .transition(.blurReplace)
       .id(selectedIndex)
+      .overlay(alignment: .bottomTrailing) {
+        VStack {
+          ButtonAction(isBool: vm.isFavorite, icon: .favorite, onTap: { vm.onFavoriteTap() })
+          ButtonAction(isBool: vm.isCart, icon: .cart, onTap: { vm.onCartTap() })
+        }
+        .padding(12)
+      }
   }
   
   private var SneakerInfo: some View {
-    VStack(alignment: .leading, spacing: 8) {
+    VStack(alignment: .leading, spacing: 12) {
       Text(sneaker.name)
         .font(.system(size: 24, weight: .bold))
         .multilineTextAlignment(.leading)
       
       Text(sneaker.story)
         .font(.system(size: 14))
+        .lineSpacing(6)
     }
   }
   
@@ -79,41 +84,43 @@ extension SneakerDetail {
         }
       }
     }
+    .padding(.vertical, 8)
   }
   
   private var ButtonCart: some View {
-    Button { onCartTapped() } label: {
+    Button { vm.onCartTap() } label: {
       HStack(spacing: 18) {
-        Image(systemName: isCart ? "cart.fill" : "cart")
-          .foregroundColor(isCart ? .white : .black)
+        Image(systemName: vm.isCart ? "cart.fill" : "cart")
+          .foregroundColor(vm.isCart ? .white : .black)
           .font(.system(size: 16))
         
         VStack(alignment: .leading, spacing: 4.0) {
           Text(sneaker.price.asCurrency())
-            .foregroundColor(isCart ? .white : .black)
+            .foregroundColor(vm.isCart ? .white : .black)
             .font(.system(size: 18, weight: .bold))
           
-          Text(isCart ? "Added": "Buy")
-            .foregroundColor(isCart ? .white : .black)
+          Text(vm.isCart ? "Added": "Buy")
+            .foregroundColor(vm.isCart ? .white : .black)
             .font(.system(size: 14))
         }
       }
       .frame(maxWidth: .infinity, minHeight: 60)
-      .background(isCart ? .black : .white)
+      .background(vm.isCart ? .black : .white)
       .clipShape(Capsule())
     }
-    .animation(.easeInOut, value: isCart)
+    .animation(.easeInOut, value: vm.isCart)
   }
   
   private var ButtonFavorite: some View {
-    Button { onFavoriteTapped() } label: {
-      Image(systemName: isFavorite ? "heart.fill" : "heart")
+    Button { vm.onFavoriteTap() } label: {
+      Image(systemName: vm.isFavorite ? "heart.fill" : "heart")
         .font(.system(size: 20))
-        .foregroundColor(isFavorite ? .white : .black)
+        .foregroundColor(vm.isFavorite ? .white : .black)
         .frame(minWidth: 60, minHeight: 60)
-        .background(isFavorite ? .black : .white)
+        .background(vm.isFavorite ? .black : .white)
         .clipShape(Circle())
     }
-    .animation(.easeInOut, value: isFavorite)
+    .animation(.easeInOut, value: vm.isFavorite)
   }
 }
+

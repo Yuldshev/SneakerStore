@@ -3,7 +3,7 @@ import Foundation
 protocol SneakersServiceProtocol {
   func fetchSneakers(count: Int) async throws -> [Sneaker]
   func fetchSneaker(id: String) async throws -> Sneaker
-  func searchSneakers(name: String?, brand: SneakerBrand?, gender: SneakerGender?, sort: String?, count: Int) async throws -> [Sneaker]
+  func searchSneakers(brand: SneakerBrand?, gender: SneakerGender?, sort: String?, count: Int) async throws -> [Sneaker]
 }
 
 final class SneakersService: SneakersServiceProtocol {
@@ -26,7 +26,7 @@ final class SneakersService: SneakersServiceProtocol {
   func fetchSneaker(id: String) async throws -> Sneaker {
     let cacheKey = "sneaker_\(id)"
     
-    if let cached: SneakerDTO = await cacheService.loadCache(key: cacheKey, as: SneakerDTO.self) {
+    if let cached: SneakersDTO = await cacheService.loadCache(key: cacheKey, as: SneakersDTO.self) {
       if let sneaker = Mapper.map(from: [cached]).first { return sneaker }
     }
     
@@ -47,13 +47,12 @@ final class SneakersService: SneakersServiceProtocol {
   }
   
   //MARK: - Search Sneakers
-  func searchSneakers(name: String?, brand: SneakerBrand?, gender: SneakerGender?, sort: String?, count: Int) async throws -> [Sneaker] {
-    return try await loadSneakersLoop(name: name, brand: brand, gender: gender, sort: sort, count: count)
+  func searchSneakers(brand: SneakerBrand?, gender: SneakerGender?, sort: String?, count: Int) async throws -> [Sneaker] {
+    return try await loadSneakersLoop(brand: brand, gender: gender, sort: sort, count: count)
   }
   
   //MARK: - Private methods
   private func loadSneakersLoop(
-    name: String? = nil,
     brand: SneakerBrand? = nil,
     gender: SneakerGender? = nil,
     sort: String? = nil,
@@ -63,19 +62,19 @@ final class SneakersService: SneakersServiceProtocol {
     var currentPage = 1
     
     while sneakers.count < count {
-      try await withThrowingTaskGroup(of: [SneakerDTO].self) { group in
+      try await withThrowingTaskGroup(of: [SneakersDTO].self) { group in
         for _ in 0..<5 {
           currentPage += 1
           let page = currentPage
           
           group.addTask {
-            let cacheKey = self.makeCacheKey(page: page, name: name, brand: brand, gender: gender, sort: sort)
+            let cacheKey = self.makeCacheKey(page: page, brand: brand, gender: gender, sort: sort)
             
-            if let cached: [SneakerDTO] = await self.cacheService.loadCache(key: cacheKey, as: [SneakerDTO].self) {
+            if let cached: [SneakersDTO] = await self.cacheService.loadCache(key: cacheKey, as: [SneakersDTO].self) {
               return cached
             }
             
-            let dtos = try await self.fetchSneakerDTOs(limit: self.apiLimit, page: page, gender: gender, brand: brand, sort: sort, name: name)
+            let dtos = try await self.fetchSneakerDTOs(limit: self.apiLimit, page: page, gender: gender, brand: brand, sort: sort)
             await self.cacheService.saveCache(dtos, key: cacheKey)
             return dtos
           }
@@ -98,18 +97,16 @@ final class SneakersService: SneakersServiceProtocol {
     page: Int,
     gender: SneakerGender? = nil,
     brand: SneakerBrand? = nil,
-    sort: String? = nil,
-    silhouette: String? = nil,
-    name: String? = nil
-  ) async throws -> [SneakerDTO] {
-    let endpoint = SneakersEndpoint.getSneakers(limit: limit, page: page, gender: gender?.rawValue, brand: brand?.rawValue, sort: sort, silhouette: silhouette, name: name)
+    sort: String? = nil
+  ) async throws -> [SneakersDTO] {
+    let endpoint = SneakersEndpoint.getSneakers(limit: limit, page: page, gender: gender?.rawValue, brand: brand?.rawValue, sort: sort)
     
     let response: SneakersResponse = try await networkClient.request(endpoint)
     return response.results
   }
   
-  private func makeCacheKey(page: Int, name: String?, brand: SneakerBrand?, gender: SneakerGender?, sort: String?) -> String {
-    [ "sneakers", "page=\(page)", name.map { "name=\($0)" }, brand.map { "brand=\($0)" }, gender.map { "gender=\($0)" }, sort.map { "sort=\($0)" }]
+  private func makeCacheKey(page: Int, brand: SneakerBrand?, gender: SneakerGender?, sort: String?) -> String {
+    [ "sneakers", "page=\(page)", brand.map { "brand=\($0)" }, gender.map { "gender=\($0)" }, sort.map { "sort=\($0)" }]
       .compactMap { $0 }
       .joined(separator: "&")
   }
