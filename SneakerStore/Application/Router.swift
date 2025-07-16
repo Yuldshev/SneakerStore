@@ -16,7 +16,7 @@ final class Router: RouterProtocol {
   @MainActor
   func showSneakerDetail(model: SneakerCardModel) async {
     router.showScreen(.push) { _ in
-      SneakerDetail(sneaker: model.sneaker)
+      SneakerDetailView(sneaker: model.sneaker)
     }
   }
 }

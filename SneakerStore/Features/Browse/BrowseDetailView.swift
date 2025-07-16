@@ -19,7 +19,7 @@ struct BrowseDetailView: View {
       ScrollView(.vertical) {
         LazyVStack(pinnedViews: [.sectionHeaders]) {
           Section {
-            switch vm.state {
+            switch vm.state.loadingState {
               case .idle, .loading:
                 SkeletonGrid().skeleton(true)
               case .loaded:

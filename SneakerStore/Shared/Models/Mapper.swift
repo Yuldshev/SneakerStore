@@ -1,7 +1,7 @@
 import Foundation
 
 enum Mapper {
-  static func map(from dtos: [SneakerDTO]) -> [Sneaker] {
+  static func map(from dtos: [SneakersDTO]) -> [Sneaker] {
     let groupedBySilhoutte = Dictionary(grouping: dtos, by: { $0.silhouette })
     
     let sneakers = groupedBySilhoutte.compactMap { _, productDTOs in
@@ -11,7 +11,7 @@ enum Mapper {
     return sneakers.sorted { $0.name < $1.name }
   }
   
-  private static func map(from dtos: [SneakerDTO]) -> Sneaker? {
+  private static func map(from dtos: [SneakersDTO]) -> Sneaker? {
     guard let firstDTO = dtos.first else { return nil }
     
     guard
@@ -39,7 +39,7 @@ enum Mapper {
     )
   }
   
-  private static func mapToVariant(from dto: SneakerDTO) -> SneakerVariant? {
+  private static func mapToVariant(from dto: SneakersDTO) -> SneakerVariant? {
     guard let image = URL(string: dto.image.original) else { return nil }
     
     return SneakerVariant(

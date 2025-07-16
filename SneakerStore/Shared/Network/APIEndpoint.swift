@@ -34,7 +34,7 @@ extension APIEndpoint {
     urlComponents?.queryItems = parameters
     
     guard let url = urlComponents?.url else {
-      throw AFError.invalidURL(url: urlComponents?.url ?? baseUrl)
+      throw NetworkError.invalidURL
     }
     
     var request = URLRequest(url: url)
